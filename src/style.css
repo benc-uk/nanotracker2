@@ -1,0 +1,22 @@
+html,
+body {
+  height: 100%;
+  background-color: rgb(39, 33, 54);
+  padding: 0;
+  margin: 0;
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  background-color: #000000;
+  height: 100%;
+
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@font-face {
+  font-family: 'pixel';
+  src: url('/QuinqueFive.ttf');
+}
