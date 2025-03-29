@@ -5,8 +5,10 @@ import './style.css'
 import workletURL from './audio.js?url'
 import * as gfx from './drawing.js'
 import { metrics } from './font.js'
-import { Project } from './project.js'
+import { Instrument } from './data.js'
+import { loadProject, loadSample } from './loading.js'
 
+export let ac
 try {
   const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'))
   if (!canvas) throw new Error('Canvas element not found')
@@ -24,24 +26,37 @@ let cursor = 0
 draw()
 
 const audioCtx = new AudioContext()
-
+ac = audioCtx
 await audioCtx.audioWorklet.addModule(workletURL)
-
 const trackerNode = new AudioWorkletNode(audioCtx, 'tracker-processor', {
-  numberOfOutputs: 2,
-  outputChannelCount: [2, 2],
+  numberOfOutputs: 1,
+  outputChannelCount: [2],
 })
 trackerNode.connect(audioCtx.destination)
 
-const proj = new Project(audioCtx)
-await proj.loadSample('/samples/cw_amen03_167.wav')
-await proj.loadSample('/samples/cw_amen05_158.wav')
-await proj.loadSample('/samples/loop.wav')
+const project = await loadProject('/project.json')
+
+// const sample1 = await loadSample('/samples/DnB23.wav', audioCtx)
+const sample1 = await loadSample('/samples/Kit 7/BD Tired 01.wav', audioCtx)
+const sample2 = await loadSample('/samples/Kit 7/SD Sane 02.wav', audioCtx)
+const sample3 = await loadSample('/samples/Kit 7/TM Room 03.wav', audioCtx)
+project.instruments.push(new Instrument(sample1))
+project.instruments.push(new Instrument(sample2))
+project.instruments.push(new Instrument(sample3))
 
 trackerNode.port.postMessage({
-  type: 'addSample',
-  sample: proj.samples[1].getChannelData(0),
+  type: 'loadProject',
+  project,
 })
+
+trackerNode.port.onmessage = (e) => {
+  if (e.data.type === 'nextRow') {
+    cursor = (cursor + 1) % 16
+    draw()
+  }
+}
+
+// === Stuff for UI/UX
 
 window.addEventListener('keydown', (e) => {
   // start audio context on keydown
