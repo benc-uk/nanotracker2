@@ -1,0 +1,78 @@
+// ====================================================================================
+// Module: loaders.js
+// Loading, parsing & decoding external files.
+// ====================================================================================
+// @ts-check
+
+import { Instrument, Project, Sample, Pattern, Note } from './data'
+import decodeAudio from 'audio-decode'
+
+/**
+ * Loads a project from a URL and returns a Project object.
+ * @param {string} url - The URL of the project to load.
+ */
+export async function loadProject(url) {
+  console.log(`Loading project from ${url}`)
+
+  const project = new Project()
+
+  const resp = await fetch(url)
+  if (!resp.ok) {
+    throw new Error(`Failed to load project: ${resp.statusText}`)
+  }
+
+  const data = await resp.json()
+  if (!data) {
+    throw new Error('Failed to parse project data, JSON is invalid')
+  }
+
+  for (const instData of data.instruments) {
+    const sample = await loadSample(instData.sampleUrl)
+    const instrument = new Instrument(instData.id, sample)
+    project.instruments[instData.id] = instrument
+  }
+
+  for (const patData of data.patterns) {
+    if (patData.rows.length !== patData.length) {
+      console.warn(`💩 Pattern ${patData.id} has ${patData.rows.length} rows, expected ${patData.length}`)
+    }
+
+    const pattern = new Pattern(patData.id, patData.length)
+    project.patterns[patData.id] = pattern
+
+    let row = 0
+    for (const rowData of patData.rows) {
+      if (rowData) {
+        const noteData = rowData.note
+        const note = new Note(noteData.value, project.instruments[noteData.instrumentId], noteData.volume)
+        pattern.rows[row].note = note
+      }
+
+      row++
+    }
+  }
+
+  for (const songRow of data.song) {
+    project.song.push(songRow)
+  }
+
+  return project
+}
+
+/**
+ * Loads a sample from a URL and decodes it into an AudioBuffer.
+ * @param {string} url - The URL of the sample to load.
+ */
+export async function loadSample(url) {
+  console.log(`Loading sample from ${url}`)
+
+  const resp = await fetch(url)
+  if (!resp.ok) {
+    throw new Error(`Failed to load sample: ${resp.statusText}`)
+  }
+
+  const arrayBuffer = await resp.arrayBuffer()
+  const audioBuffer = await decodeAudio(arrayBuffer)
+
+  return new Sample(audioBuffer)
+}

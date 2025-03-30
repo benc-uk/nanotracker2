@@ -1,0 +1,104 @@
+{
+  "instruments": [
+    {
+      "id": 0,
+      "name": "kick",
+      "sampleUrl": "/samples/Kit 4/BD Propa 01.wav",
+      "gain": 1.0,
+      "loop": false
+    },
+    {
+      "id": 1,
+      "name": "snare",
+      "sampleUrl": "/samples/Kit 7/SD Sane 02.wav",
+      "gain": 1.0,
+      "loop": false
+    },
+    {
+      "id": 2,
+      "name": "hat",
+      "sampleUrl": "/samples/Kit1986/HH lo-bit 4.wav",
+      "gain": 1.0,
+      "loop": false
+    },
+    {
+      "id": 3,
+      "name": "bass",
+      "sampleUrl": "/samples/Kit 7/TM Room 03.wav",
+      "gain": 1.0,
+      "loop": false
+    }
+  ],
+  "patterns": [
+    {
+      "id": 0,
+      "length": 16,
+      "name": "Drums",
+      "rows": [
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        { "note": { "instrumentId": 1, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        null,
+        { "note": { "instrumentId": 1, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } }
+      ]
+    },
+    {
+      "id": 1,
+      "length": 16,
+      "name": "Hats",
+      "rows": [
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.2 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.4 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.2 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.4 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.9 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.2 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.8 } },
+        { "note": { "instrumentId": 2, "value": 60, "volume": 0.3 } }
+      ]
+    },
+    {
+      "id": 2,
+      "length": 16,
+      "name": "Bass Thing",
+      "rows": [
+        { "note": { "instrumentId": 3, "value": 61, "volume": 0.93 } },
+        null,
+        null,
+        { "note": { "instrumentId": 3, "value": 60, "volume": 0.77 } },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        { "note": { "instrumentId": 3, "value": 63, "volume": 0.93 } },
+        null,
+        null,
+        null,
+        { "note": { "instrumentId": 3, "value": 65, "volume": 0.93 } },
+        null
+      ]
+    }
+  ],
+  "song": [[0, 1, 2, null, null, null, null, null]]
+}

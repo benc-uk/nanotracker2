@@ -1,5 +1,5 @@
 // ====================================================================================
-// Module: drawing.js
+// Module: font.js
 // This is a 5x7 pixel bitmap font, each character is represented by a grid of pixels.
 // ====================================================================================
 // @ts-check
