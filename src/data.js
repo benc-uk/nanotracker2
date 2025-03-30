@@ -33,22 +33,28 @@ export class Sample {
 }
 
 export class Instrument {
+  /** @type {number} */
+  id
+
   /** @type {Sample} */
   sample
 
+  /** @type {boolean} */
   loop = false
 
   /**
+   * @param {number} id - The sample to use for this instrument.
    * @param {Sample} sample - The sample to use for this instrument.
    */
-  constructor(sample) {
+  constructor(id, sample) {
+    this.id = id
     this.sample = sample
   }
 }
 
 export class Note {
   /** @type {number} */
-  note = 60
+  value = 60
 
   /** @type {Instrument} */
   inst
@@ -62,9 +68,16 @@ export class Note {
    * @param {number} vol - The volume of the note (0.0 to 1.0).
    */
   constructor(num, inst, vol) {
-    this.note = num
+    this.value = num
     this.inst = inst
     this.volume = vol
+  }
+
+  noteName() {
+    const noteNames = ['C-', 'C#', 'D-', 'D#', 'E-', 'F-', 'F#', 'G-', 'G#', 'A-', 'A#', 'B-']
+    const octave = Math.floor(this.value / 12) - 1
+    const noteName = noteNames[this.value % 12]
+    return `${noteName}${octave}`
   }
 }
 
@@ -83,7 +96,9 @@ export class Pattern {
   /** @type {number} */
   length = 16
 
-  constructor() {
+  constructor(id) {
+    this.id = id
+
     for (let i = 0; i < this.length; i++) {
       this.rows.push(new Row())
     }
@@ -96,4 +111,15 @@ export class Project {
 
   /** @type {Record<number, Pattern>} */
   patterns = {}
+
+  // Song data [row, track] = patternId
+  /** @type {number[][]} */
+  song = []
+
+  /** @type {number} */
+  trackCount = 8
+
+  addSongRow() {
+    this.song.push(new Array(this.trackCount).fill(-1))
+  }
 }

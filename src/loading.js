@@ -22,7 +22,9 @@ export async function loadSample(url, audioContext) {
   const arrayBuffer = await response.arrayBuffer()
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
 
-  console.log(`Loaded sample: ${url}, length: ${audioBuffer.length}, channels: ${audioBuffer.numberOfChannels}`)
+  console.log(
+    `Loaded sample: ${url}, length: ${audioBuffer.length}, channels: ${audioBuffer.numberOfChannels} sample rate: ${audioBuffer.sampleRate}`,
+  )
 
   return new Sample(audioBuffer)
 }

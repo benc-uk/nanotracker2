@@ -3,27 +3,88 @@
 // An audio worklet processor that generates a simple sine wave.
 // ====================================================================================
 // @ts-check
+/*eslint no-unused-vars: "off"*/
 
-/** @import { Project } from "./data.js" */
+/** @import { Row, Instrument, Note, Project } from "./data.js" */
+
+class Track {
+  /** @type {number} */
+  sampleIndex = 0
+
+  /** @type {Note | null} */
+  activeNote
+
+  /** @type {number} */
+  trackNum
+
+  stopped = false
+
+  constructor(trackNum) {
+    this.trackNum = trackNum
+  }
+
+  /** @param {Row} row */
+  processRow(row) {
+    if (row.note) {
+      this.activeNote = row.note
+      this.sampleIndex = 0
+      this.stopped = false
+    }
+  }
+
+  getSample() {
+    if (!this.activeNote) return null
+    if (this.stopped) return null
+
+    const inst = this.activeNote.inst
+    if (!inst) return null
+
+    const sample = inst.sample
+    if (!sample) return null
+
+    if (this.sampleIndex >= sample.leftData.length) {
+      this.stopped = true
+      this.sampleIndex = 0
+    }
+
+    const leftData = sample.leftData[this.sampleIndex]
+    const rightData = sample.rightData[this.sampleIndex]
+
+    this.sampleIndex++
+
+    return {
+      left: leftData,
+      right: rightData,
+    }
+  }
+}
 
 export class TrackerProcessor extends AudioWorkletProcessor {
   /** @type {number} */
   samplesOffset
+
   /** @type {boolean} */
   playing
+
   /** @type {Project | null} */
   project
 
-  constructor() {
+  /** @type {Track[]} */
+  tracks = []
+
+  constructor(number) {
     super()
+
+    console.log(`TrackerProcessor created, sample rate: ${sampleRate}`)
 
     this.port.onmessage = this.messageHandler.bind(this)
     this.playing = false
-    this.samplesOffset = 0
+    this.samples = 0
     this.ticks = 0
-    this.activeSample = null
+    this.row = 0
+    this.number = number
 
-    this.bpm = 128
+    this.bpm = 142
     this.ticksPerRow = 6
     this.samplesPerTick = (sampleRate * 60) / this.bpm / 4 / 6
   }
@@ -35,15 +96,18 @@ export class TrackerProcessor extends AudioWorkletProcessor {
   async messageHandler(event) {
     if (event.data.type === 'loadProject') {
       this.project = event.data.project
-      this.activeSample = this.project?.instruments[0].sample
-      this.activeInst = this.project?.instruments[0]
+      if (!this.project) return
+
+      this.tracks = []
+      for (let i = 0; i < this.project.trackCount; i++) {
+        this.tracks.push(new Track(i))
+      }
     }
 
     if (event.data.type === 'playStop') {
       this.playing = !this.playing
-      if (this.playing && this.activeSample) {
-        this.activeSample.offset = 0
-      }
+      this.row = 0
+      this.ticks = 0
     }
   }
 
@@ -53,45 +117,60 @@ export class TrackerProcessor extends AudioWorkletProcessor {
       this.ticks = 0
       this.nextRow()
     }
-
-    console.log('nextTick was called')
   }
 
   nextRow() {
-    console.log('nextRow was called')
+    if (!this.project) return
 
-    this.port.postMessage({ type: 'nextRow' })
+    const songRow = this.project.song[0]
+
+    for (const track of this.tracks) {
+      const patternId = songRow[track.trackNum]
+      if (patternId === undefined || patternId === -1) continue
+
+      const pattern = this.project.patterns[patternId]
+
+      const row = pattern.rows[this.row]
+      track.processRow(row)
+    }
+
+    this.row++
+    if (this.row >= this.project.patterns[0].length) {
+      this.row = 0
+    }
+
+    this.port.postMessage({
+      type: 'nextRow',
+      row: this.row,
+    })
   }
 
   /**
    * Audio processing loop
+   * @param {Float32Array[][]} inputs - Input audio data
+   * @param {Float32Array[][]} outputs - Output audio data
    */
   process(inputs, outputs) {
     if (!this.playing) return true
     if (!this.project) return true
-    if (!this.activeSample) return true
 
     const channelL = outputs[0][0]
     const channelR = outputs[0][1]
     const bufferLen = channelL.length
 
     for (let i = 0; i < bufferLen; i++) {
-      const sampleIndex = i + this.activeSample.offset
-      channelL[i] = this.activeSample.leftData[sampleIndex]
-      channelR[i] = this.activeSample.rightData[sampleIndex]
+      for (const track of this.tracks) {
+        const sample = track.getSample()
+        if (!sample) continue
 
-      this.samplesOffset++
-      if (this.samplesOffset >= this.samplesPerTick) {
-        this.samplesOffset = 0
-        this.nextTick()
+        channelL[i] += sample.left
+        channelR[i] += sample.right
       }
-    }
 
-    this.activeSample.offset += bufferLen
-
-    if (this.activeInst?.loop) {
-      if (this.activeSample.offset >= this.activeSample.length) {
-        this.activeSample.offset = 0 //this.activeSample.offset - this.activeSample.length
+      this.samples++
+      if (this.samples >= this.samplesPerTick) {
+        this.samples = 0
+        this.nextTick()
       }
     }
 
