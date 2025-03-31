@@ -1,7 +1,7 @@
-// ================================================================
-// Module: drawing.js
-// This module handles all drawing operations for text and shapes.
-// ================================================================
+// ==========================================================================
+// Module: display.js
+// This module handles all display & drawing operations for text and shapes.
+// ==========================================================================
 // @ts-check
 
 import { font, metrics } from './font.js'

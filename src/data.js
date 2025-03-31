@@ -27,6 +27,9 @@ export class Project {
   /** @type {number} */
   trackCount = 8
 
+  /** @type {string} */
+  name = 'Untitled'
+
   addSongRow() {
     this.song.push(new Array(this.trackCount).fill(-1))
   }
@@ -79,6 +82,8 @@ export class Project {
     for (const songRow of data.song) {
       project.song.push(songRow)
     }
+
+    project.name = data.name || 'Untitled'
 
     return project
   }

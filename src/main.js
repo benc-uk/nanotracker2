@@ -5,11 +5,11 @@
 import './style.css'
 
 // @ts-ignore
-import workletURL from './audio.js?url'
-import * as gfx from './drawing.js'
+import workletURL from './audio-worker.js?url'
+import * as gfx from './display.js'
 import { Project } from './data.js'
+import { asHex } from './utils.js'
 
-export let ac
 try {
   const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'))
   if (!canvas) throw new Error('Canvas element not found')
@@ -23,12 +23,17 @@ try {
   throw new Error(`Initialization failed: ${error}`)
 }
 
-let mode = 'pattern'
+// Global state
+
+/** @type {'song'|'pattern'|'instrument'|'project'} */
+let view = 'song'
 let activePattern = 0
 let playing = false
+let playPatternRow = 0
+let playingSongRow = 0
+let activeSongRow = 0
 
 const audioCtx = new AudioContext()
-ac = audioCtx
 await audioCtx.audioWorklet.addModule(workletURL)
 const trackerNode = new AudioWorkletNode(audioCtx, 'tracker-processor', {
   numberOfOutputs: 1,
@@ -43,10 +48,15 @@ trackerNode.port.postMessage({
   project,
 })
 
-let row = 0
 trackerNode.port.onmessage = (e) => {
+  // Message from the audio worklet when the row changes
   if (e.data.type === 'nextRow') {
-    row = e.data.row
+    playPatternRow = e.data.row
+    draw()
+  }
+
+  if (e.data.type === 'nextSongRow') {
+    playingSongRow = e.data.row
     draw()
   }
 }
@@ -56,22 +66,20 @@ draw()
 // === Stuff for UI/UX
 
 window.addEventListener('keydown', (e) => {
-  // start audio context on keydown
-  if (audioCtx.state === 'suspended') {
-    console.log('Audio context suspended, resuming...')
-    audioCtx.resume()
-  }
-
-  if (e.key === 'Q') {
-    if (mode === 'pattern') {
-      mode = 'song'
-    } else {
-      mode = 'pattern'
+  if (e.key === '0') {
+    if (view === 'pattern') {
+      view = 'song'
     }
+
     draw()
   }
 
   if (e.key === ' ') {
+    // Start audio context on keydown
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume()
+    }
+
     playing = !playing
     if (playing) {
       trackerNode.port.postMessage({
@@ -88,17 +96,42 @@ window.addEventListener('keydown', (e) => {
     draw()
   }
 
-  if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') {
-    mode = 'pattern'
-    activePattern = parseInt(e.key) - 1
-    draw()
+  if (e.key === 'ArrowUp') {
+    if (view === 'song') {
+      activeSongRow--
+      if (activeSongRow < 0) {
+        activeSongRow = project.song.length - 1
+      }
+      draw()
+    }
+  }
+
+  if (e.key === 'ArrowDown') {
+    if (view === 'song') {
+      activeSongRow++
+      if (activeSongRow >= project.song.length) {
+        activeSongRow = 0
+      }
+      draw()
+    }
+  }
+
+  if (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4' || e.key === '5' || e.key === '6' || e.key === '7' || e.key === '8') {
+    const trackNum = parseInt(e.key) - 1
+    const songRow = project.song[activeSongRow]
+
+    if (songRow[trackNum] !== null) {
+      activePattern = songRow[trackNum]
+      view = 'pattern'
+      draw()
+    }
   }
 })
 
 function draw() {
   gfx.clearAll()
 
-  if (mode === 'pattern') {
+  if (view === 'pattern') {
     const pattern = project.patterns[activePattern]
     if (!pattern) {
       return
@@ -106,7 +139,7 @@ function draw() {
     gfx.text(3, 3, pattern.name || `Pattern ${pattern.id}`, '#ee4455')
 
     const offset = 20
-    gfx.rectWH(0, offset - 2 + row * 10, 128, 10, '#041100')
+    gfx.rectWH(0, offset - 2 + playPatternRow * 10, 128, 10, '#041100')
 
     for (let i = 0; i < pattern.length; i++) {
       const row = pattern.rows[i]
@@ -122,5 +155,32 @@ function draw() {
         gfx.text(12, offset + i * 10, `--- -- --`, '#444444')
       }
     }
+  }
+
+  if (view === 'song') {
+    gfx.text(3, 3, project.name, '#ee4455')
+
+    const offset = 28
+    let rowNumColor = '#333355'
+
+    for (let track = 0; track < project.trackCount; track++) {
+      gfx.text(26 + track * 23, 15, `T${track + 1}`, '#004499')
+    }
+
+    // Draw the bar behing the playing song row
+    gfx.rectWH(0, offset - 2 + playingSongRow * 10, 208, 10, '#041100')
+
+    for (let i = 0; i < project.song.length; i++) {
+      const patterns = project.song[i]
+      gfx.text(2, offset + i * 10, asHex(i), rowNumColor)
+
+      for (let track = 0; track < project.trackCount; track++) {
+        const pattNum = patterns[track]
+        gfx.text(26 + track * 23, offset + i * 10, asHex(pattNum), '#ffffff')
+      }
+    }
+
+    // border around the active row
+    gfx.boxWH(0, offset - 2 + activeSongRow * 10, 208, 10, '#008800')
   }
 }

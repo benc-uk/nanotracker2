@@ -32,6 +32,7 @@ export class TrackerProcessor extends AudioWorkletProcessor {
     this.samples = 0 // Counts the number of samples processed in the current tick
     this.ticks = 0 // Counts the number of ticks processed in the current row
     this.row = 0 // Counts the number of rows processed in the current pattern
+    this.playingSongRow = 0 // Which row of the song are we playing
 
     this.bpm = 142
     this.ticksPerRow = 6
@@ -80,7 +81,7 @@ export class TrackerProcessor extends AudioWorkletProcessor {
     if (!this.project) return
 
     // HACK: This is temporary, we need to get the song row from the project
-    const songRow = this.project.song[0]
+    const songRow = this.project.song[this.playingSongRow]
 
     for (const track of this.tracks) {
       const patternId = songRow[track.trackNum]
@@ -96,8 +97,17 @@ export class TrackerProcessor extends AudioWorkletProcessor {
 
     this.row++
 
+    // End of pattern, go to next song row
     if (this.row >= this.project.patterns[0].length) {
       this.row = 0
+      this.playingSongRow++
+      if (this.playingSongRow >= this.project.song.length) {
+        this.playingSongRow = 0
+      }
+      this.port.postMessage({
+        type: 'nextSongRow',
+        row: this.playingSongRow,
+      })
     }
 
     this.port.postMessage({
