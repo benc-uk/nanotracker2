@@ -183,7 +183,7 @@ function draw() {
     }
 
     // Draw the bar behing the playing song row
-    gfx.rectWH(0, offset - 2 + playingSongRow * 10, 208, 10, '#002211')
+    gfx.rectWH(0, offset - 2 + playingSongRow * 10, 208, 10, '#003322')
 
     for (let i = 0; i < project.song.length; i++) {
       const patterns = project.song[i]
