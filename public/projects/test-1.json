@@ -3,28 +3,28 @@
     {
       "id": 0,
       "name": "kick",
-      "sampleUrl": "/samples/Kit 4/BD Propa 01.wav",
+      "sampleUrl": "./samples/Kit 4/BD Propa 01.wav",
       "gain": 1.0,
       "loop": false
     },
     {
       "id": 1,
       "name": "snare",
-      "sampleUrl": "/samples/Kit 7/SD Sane 02.wav",
+      "sampleUrl": "./samples/Kit 7/SD Sane 02.wav",
       "gain": 1.0,
       "loop": false
     },
     {
       "id": 2,
       "name": "hat",
-      "sampleUrl": "/samples/Kit1986/HH lo-bit 4.wav",
+      "sampleUrl": "./samples/Kit1986/HH lo-bit 4.wav",
       "gain": 1.0,
       "loop": false
     },
     {
       "id": 3,
       "name": "bass",
-      "sampleUrl": "/samples/Kit 7/TM Room 03.wav",
+      "sampleUrl": "./samples/Kit 7/TM Room 03.wav",
       "gain": 1.0,
       "loop": false
     }
