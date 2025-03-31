@@ -19,6 +19,22 @@ try {
 
   // Initialize the graphics library
   await gfx.init(ctx)
+
+  // Handle tapping on the canvas
+  // HACK: This is a workaround for the fact that we can't use touch events in the audio worklet
+  canvas.addEventListener('click', () => {
+    // Send key event to the window
+    const keyEvent = new KeyboardEvent('keydown', {
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    window.dispatchEvent(keyEvent)
+  })
+
+  // detect if the window is portrait or landscape on resize
+  window.addEventListener('resize', resize)
+  resize()
 } catch (error) {
   throw new Error(`Initialization failed: ${error}`)
 }
@@ -64,7 +80,6 @@ trackerNode.port.onmessage = (e) => {
 draw()
 
 // === Stuff for UI/UX
-
 window.addEventListener('keydown', (e) => {
   if (e.key === '0') {
     if (view === 'pattern') {
@@ -182,5 +197,19 @@ function draw() {
 
     // border around the active row
     gfx.boxWH(0, offset - 2 + activeSongRow * 10, 208, 10, '#008800')
+  }
+}
+
+function resize() {
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'))
+  if (!canvas) throw new Error('Canvas element not found')
+
+  const isPortrait = window.innerHeight > window.innerWidth
+  if (isPortrait) {
+    canvas.style.width = '100%'
+    canvas.style.height = 'auto'
+  } else {
+    canvas.style.width = 'auto'
+    canvas.style.height = '100%'
   }
 }
