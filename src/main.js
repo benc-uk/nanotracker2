@@ -41,7 +41,7 @@ const trackerNode = new AudioWorkletNode(audioCtx, 'tracker-processor', {
 })
 trackerNode.connect(audioCtx.destination)
 
-const project = await Project.load('./projects/test-1.json')
+const project = await Project.load('projects/test-1.json')
 
 trackerNode.port.postMessage({
   type: 'loadProject',
