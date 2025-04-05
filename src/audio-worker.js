@@ -99,7 +99,7 @@ export class TrackerProcessor extends AudioWorkletProcessor {
     this.songPatterns = [] // The patterns of the current song row
     this.tracks = [] // The tracks of the current song row
 
-    this.bpm = 165
+    this.bpm = 138
     this.ticksPerRow = 6
     this.samplesPerTick = (sampleRate * 60) / this.bpm / 4 / 6
   }
