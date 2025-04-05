@@ -1,261 +1,121 @@
-// ==========================================================================
-// Module: display.js
-// This module handles all display & drawing operations for text and shapes.
-// ==========================================================================
+// ====================================================
+// UI output
+// ====================================================
 // @ts-check
 
-import { font, metrics } from './font.js'
+import * as gfx from './gfx.js'
+import { theme } from './theme.js'
+import { asHex } from './utils.js'
 
-/** @type {CanvasRenderingContext2D} */
-let ctx
+/** @import { Project } from "./data.js" */
 
-/** @type {ImageData} */
-let imageData
+export function initDisplay() {
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'))
+  if (!canvas) throw new Error('Canvas element not found')
 
-/** @type {[number, number, number]} */
-let colour = [255, 255, 255]
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Failed to get 2D context, your browser may be from the distant past')
 
-/** @typedef {string | [number, number, number]} ColourParam */
+  // Initialize the graphics library
+  gfx.init(ctx)
 
-/**
- * Initializes the drawing module with a canvas context.
- * @param {CanvasRenderingContext2D | null} canvasContext - The 2D rendering context of the canvas.
- * @throws {Error} If the context is undefined or null.
- */
-export async function init(canvasContext) {
-  if (!canvasContext) {
-    throw new Error('Context is undefined or null')
-  }
+  // Apply theme to page elements
+  document.body.style.backgroundColor = theme.body
+  canvas.style.backgroundColor = theme.background
 
-  ctx = canvasContext
-  ctx.strokeStyle = 'white'
-  ctx.fillStyle = 'white'
-  ctx.lineWidth = 1
-  ctx.imageSmoothingEnabled = false
-
-  // Create a new ImageData object with the same dimensions as the canvas
-  imageData = ctx.createImageData(ctx.canvas.width, ctx.canvas.height)
-
-  requestAnimationFrame(drawImageData)
+  window.addEventListener('resize', resize)
+  resize()
 }
 
 /**
- * Sets the colour for drawing.
- * @param {ColourParam} newColour - The colour to set, can be a hex string or an RGB array.
+ * Draws the UI elements on the canvas.
+ * @param {Project} project
+ * @param {import('./main.js').UIState} uiState
+ * @param {import('./main.js').PlayingState} playingState
  */
-export function setColour(newColour) {
-  if (typeof newColour === 'string') {
-    const rgb = hexToRgb(newColour)
-    if (rgb) {
-      colour = rgb
+export function renderDisplay(project, uiState, playingState) {
+  gfx.clearAll()
+
+  if (uiState.mode === 'pattern') {
+    if (!uiState.patt) return
+
+    // Pattern title
+    gfx.text(3, 3, uiState.patt.name || `Pattern ${uiState.patt.id}`, theme.title)
+
+    for (let trackNum = 0; trackNum < project.trackCount; trackNum++) {
+      const patNum = project.song[uiState.songRow][trackNum]
+
+      let boxColour = '#444444'
+      if (trackNum === uiState.trackNum) {
+        boxColour = '#ffffff'
+      }
+
+      if (patNum !== null) {
+        gfx.rectWH(200 + trackNum * 5, 5, 3, 3, boxColour)
+      } else {
+        gfx.boxWH(200 + trackNum * 5, 5, 3, 3, boxColour)
+      }
     }
-  }
 
-  if (Array.isArray(newColour)) {
-    colour = newColour
-  }
-}
+    const offset = 20
+    gfx.rectWH(0, offset - 2 + playingState.pattRow * 10, 128, 10, '#041100')
 
-/**
- * Sets a single pixel, uses the current colour.
- * @param {number} x - The x-coordinate of the pixel.
- * @param {number} y - The y-coordinate of the pixel.
- */
-export function setPixel(x, y) {
-  // Set the pixel colour in the image data array
-  const index = (y * imageData.width + x) * 4
-  imageData.data[index] = colour[0] // Red
-  imageData.data[index + 1] = colour[1] // Green
-  imageData.data[index + 2] = colour[2] // Blue
-  imageData.data[index + 3] = 255 // Alpha (fully opaque)
-}
+    for (let i = 0; i < uiState.patt.length; i++) {
+      const row = uiState.patt.rows[i]
+      let rowNumColor = '#333355'
+      if (i % 4 === 0) {
+        rowNumColor = '#8888aa'
+      }
+      gfx.text(2, offset + i * 10, `${i.toString(16)}`, rowNumColor)
 
-/**
- * Draws a vertical line from (x, y) to (x, y2).
- * @param {number} x - The x-coordinate of the line.
- * @param {number} y - The starting y-coordinate of the line.
- * @param {number} y2 - The ending y-coordinate of the line.
- * @param {ColourParam} [colour] - The colour of the line. Defaults to current colour.
- */
-export function vertLine(x, y, y2, colour = '') {
-  if (colour !== '') setColour(colour)
-  for (let i = y; i <= y2; i++) {
-    setPixel(x, i)
-  }
-}
-
-/**
- * Draws a horizontal line from (x, y) to (x2, y).
- * @param {number} x - The starting x-coordinate of the line.
- * @param {number} y - The y-coordinate of the line.
- * @param {number} x2 - The ending x-coordinate of the line.
- * @param {ColourParam} [colour] - The colour of the line. Defaults to current colour.
- */
-export function horLine(x, y, x2, colour = '') {
-  if (colour !== '') setColour(colour)
-
-  for (let i = x; i <= x2; i++) {
-    setPixel(i, y)
-  }
-}
-
-/**
- * Draws a unfilled rectangle using top-left and bottom-right coordinates.
- * @param {number} x - The x-coordinate of the rectangle's top-left corner.
- * @param {number} y - The y-coordinate of the rectangle's top-left corner.
- * @param {number} x2 - The x-coordinate of the rectangle's bottom-right corner.
- * @param {number} y2 - The y-coordinate of the rectangle's bottom-right corner.
- * @param {ColourParam} colour - The colour of the rectangle. Defaults to current colour.
- */
-export function box(x, y, x2, y2, colour = '') {
-  if (colour !== '') setColour(colour)
-
-  vertLine(x, y, y2)
-  vertLine(x2, y, y2)
-  horLine(x, y, x2)
-  horLine(x, y2, x2)
-}
-
-/**
- * Draws a unfilled rectangle using width and height.
- * @param {number} x - The x-coordinate of the rectangle's top-left corner.
- * @param {number} y - The y-coordinate of the rectangle's top-left corner.
- * @param {number} w - The width of the rectangle.
- * @param {number} h - The height of the rectangle.
- * @param {string} colour - The colour of the rectangle. Defaults to current colour.
- */
-export function boxWH(x, y, w, h, colour = '') {
-  if (colour !== '') setColour(colour)
-
-  vertLine(x, y, y + h)
-  vertLine(x + w, y, y + h)
-  horLine(x, y, x + w)
-  horLine(x, y + h, x + w)
-}
-
-/**
- * Clears the entire canvas by unsetting all pixels.
- */
-export function clearAll() {
-  imageData.data.fill(0)
-}
-
-/**
- * Draws a filled rectangle using top-left and bottom-right coordinates.
- * @param {number} x - The x-coordinate of the rectangle's top-left corner.
- * @param {number} y - The y-coordinate of the rectangle's top-left corner.
- * @param {number} x2 - The x-coordinate of the rectangle's bottom-right corner.
- * @param {number} y2 - The y-coordinate of the rectangle's bottom-right corner.
- * @param {ColourParam} colour - The colour of the rectangle. Defaults to current colour.
- */
-export function rect(x, y, x2, y2, colour = '') {
-  if (colour !== '') setColour(colour)
-
-  for (let i = x; i <= x2; i++) {
-    for (let j = y; j <= y2; j++) {
-      setPixel(i, j)
-    }
-  }
-}
-
-/**
- * Draws a filled rectangle using width and height.
- * @param {number} x - The x-coordinate of the rectangle's top-left corner.
- * @param {number} y - The y-coordinate of the rectangle's top-left corner.
- * @param {number} w - The width of the rectangle.
- * @param {number} h - The height of the rectangle.
- * @param {ColourParam} colour - The colour of the rectangle. Defaults to current colour.
- */
-export function rectWH(x, y, w, h, colour = '') {
-  if (colour !== '') setColour(colour)
-  for (let i = x; i <= x + w; i++) {
-    for (let j = y; j <= y + h; j++) {
-      setPixel(i, j)
-    }
-  }
-}
-
-/**
- * Clears a single pixel at the specified coordinates.
- * @param {number} x - The x-coordinate of the pixel.
- * @param {number} y - The y-coordinate of the pixel.
- */
-export function clearPixel(x, y) {
-  const index = (y * imageData.width + x) * 4
-  imageData.data[index] = 0 // Red
-  imageData.data[index + 1] = 0 // Green
-  imageData.data[index + 2] = 0 // Blue
-}
-
-/**
- * Draws text at the specified coordinates.
- * @param {number} x - The x-coordinate to draw the text.
- * @param {number} y - The y-coordinate to draw the text.
- * @param {string} str - The text to draw.
- * @param {ColourParam} colour - The colour of the text. Defaults to current colour.
- */
-export function text(x, y, str, colour = '') {
-  if (colour !== '') setColour(colour)
-
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i].toUpperCase()
-    drawChar(x + i * (metrics.width + metrics.spacing), y, char)
-  }
-}
-
-// =================================================
-// Private functions
-// =================================================
-
-/**
- * Draws a character at the specified coordinates.
- * @param {number} x - The x-coordinate to draw the character.
- * @param {number} y - The y-coordinate to draw the character.
- * @param {string} char - The character to draw.
- */
-function drawChar(x, y, char) {
-  const charData = font[char]
-  if (!charData) return
-
-  for (let i = 0; i < charData.length; i++) {
-    const row = charData[i]
-    for (let j = 0; j < 5; j++) {
-      if ((row & (1 << (4 - j))) !== 0) {
-        setPixel(x + j, y + i)
+      if (row.note) {
+        gfx.text(12, offset + +i * 10, `${row.note.noteString()} ${row.note.inst.toString()} ${row.note.volumeString()}`, '#ffffff')
+      } else {
+        gfx.text(12, offset + i * 10, `--- -- --`, '#444444')
       }
     }
   }
-}
 
-/**
- * Draws the image data to the canvas.
- * This function is called repeatedly using requestAnimationFrame.
- */
-function drawImageData() {
-  // Draw the image data to the canvas
-  ctx.putImageData(imageData, 0, 0)
-  requestAnimationFrame(drawImageData)
-}
+  if (uiState.mode === 'song') {
+    gfx.text(3, 3, project.name, theme.title)
+    // bpm
+    gfx.text(200, 3, `BPM: ${project.bpm}`, theme.title)
 
-/**
- * Converts a hex colour string to an RGB object.
- * @param {string} hex - The hex colour string (e.g., '#ff00ff').
- * @returns {[number, number, number] | null} The RGB array or null if the input is invalid.
- */
-function hexToRgb(hex) {
-  // Remove the '#' character if present
-  hex = hex.replace('#', '')
+    const offset = 28
+    let rowNumColor = '#333355'
 
-  // Check if the hex string is valid
-  if (hex.length !== 6) {
-    console.error('Invalid hex colour:', hex)
-    return null
+    for (let track = 0; track < project.trackCount; track++) {
+      gfx.text(26 + track * 23, 15, `T${track + 1}`, '#004499')
+    }
+
+    // Draw the bar behind the playing song row
+    gfx.rectWH(0, offset - 2 + playingState.songRow * 10, 208, 10, '#003322')
+
+    for (let i = 0; i < project.song.length; i++) {
+      const patterns = project.song[i]
+      gfx.text(2, offset + i * 10, asHex(i), rowNumColor)
+
+      for (let track = 0; track < project.trackCount; track++) {
+        const pattNum = patterns[track]
+        gfx.text(26 + track * 23, offset + i * 10, asHex(pattNum), '#ffffff')
+      }
+    }
+
+    // border around the active row
+    gfx.boxWH(0, offset - 2 + uiState.songRow * 10, 208, 10, '#008800')
   }
+}
 
-  // Convert hex to RGB
-  const r = parseInt(hex.slice(0, 2), 16)
-  const g = parseInt(hex.slice(2, 4), 16)
-  const b = parseInt(hex.slice(4, 6), 16)
+function resize() {
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('canvas'))
+  if (!canvas) return
 
-  return [r, g, b]
+  const isPortrait = window.innerHeight > window.innerWidth * (canvas.height / canvas.width)
+  if (isPortrait) {
+    canvas.style.width = '100%'
+    canvas.style.height = 'auto'
+  } else {
+    canvas.style.width = 'auto'
+    canvas.style.height = '100%'
+  }
 }

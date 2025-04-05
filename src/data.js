@@ -30,6 +30,9 @@ export class Project {
   /** @type {string} */
   name = 'Untitled'
 
+  /** @type {number} */
+  bpm = 120
+
   addSongRow() {
     this.song.push(new Array(this.trackCount).fill(-1))
   }
@@ -56,6 +59,7 @@ export class Project {
     for (const instData of data.instruments) {
       const sample = await Sample.load(instData.sampleUrl)
       const instrument = new Instrument(instData.id, sample)
+      instrument.loop = instData.loop || false
       project.instruments[instData.id] = instrument
     }
 

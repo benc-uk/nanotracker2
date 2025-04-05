@@ -1,0 +1,38 @@
+{
+  "instruments": [
+    {
+      "id": 0,
+      "name": "kick",
+      "sampleUrl": "./samples/amen1.wav",
+      "gain": 1.0,
+      "loop": true
+    }
+  ],
+  "patterns": [
+    {
+      "id": 0,
+      "length": 16,
+      "name": "Drums",
+      "rows": [
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        null,
+        { "note": { "instrumentId": 0, "value": 60, "volume": 1.0 } },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ],
+  "song": [[0, null, null, null, null, null, null, null]],
+  "name": "Test project 1"
+}
